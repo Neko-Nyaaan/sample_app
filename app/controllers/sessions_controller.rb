@@ -4,6 +4,8 @@ class SessionsController < ApplicationController
   def create
     user = User.find_by(email: params[:session][:email].downcase)
     if user && user.authenticate(params[:session][:password])
+      login_url user
+      redirect_to user
       #ユーザーログイン後にユーザー情報のページにリダイレクト
     else
       #エラーメッセージを作成する
@@ -12,5 +14,7 @@ class SessionsController < ApplicationController
     end
   end
   def destroy
+    log_out
+    redirect_to root_url
   end
 end
