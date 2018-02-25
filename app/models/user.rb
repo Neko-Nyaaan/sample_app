@@ -1,24 +1,28 @@
 class User < ApplicationRecord
   has_many :microposts, dependent: :destroy
-  has_many :active_relationships, class_name:  "Relationship",
-                                  foreign_key: "follower_id",
-                                  dependent:   :destroy
-  has_many :following, through: :active_relationships, source: :followed
+  has_many :active_relationships,  class_name:  "Relationship",
+  foreign_key: "follower_id",
+  dependent:   :destroy
+  has_many :passive_relationships, class_name:  "Relationship",
+  foreign_key: "followed_id",
+  dependent:   :destroy
+  has_many :following, through: :active_relationships,  source: :followed
+  has_many :followers, through: :passive_relationships, source: :follower
   attr_accessor :remember_token, :activation_token, :reset_token
   before_save   :downcase_email
   before_create :create_activation_digest
   validates :name,  presence: true, length: { maximum: 50 }
   VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
   validates :email, presence: true, length: { maximum: 255 },
-                    format: { with: VALID_EMAIL_REGEX },
-                     uniqueness: { case_sensitive: false }
+  format: { with: VALID_EMAIL_REGEX },
+  uniqueness: { case_sensitive: false }
   has_secure_password
   validates :password, presence: true, length: { minimum: 6 }, allow_nil: true
 
   # 渡された文字列のハッシュ値を返す
   def User.digest(string)
     cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
-                                                  BCrypt::Engine.cost
+    BCrypt::Engine.cost
     BCrypt::Password.create(string, cost: cost)
   end
 
@@ -40,11 +44,11 @@ class User < ApplicationRecord
   end
 
   # トークンがダイジェストと一致したらtrueを返す
-    def authenticated?(attribute, token)
-      digest = send("#{attribute}_digest")
-      return false if digest.nil?
-      BCrypt::Password.new(digest).is_password?(token)
-    end
+  def authenticated?(attribute, token)
+    digest = send("#{attribute}_digest")
+    return false if digest.nil?
+    BCrypt::Password.new(digest).is_password?(token)
+  end
 
   # ユーザーのログイン情報を破棄する
   def forget
@@ -93,14 +97,14 @@ class User < ApplicationRecord
 
   private
 
-    # メールアドレスをすべて小文字にする
-    def downcase_email
-      email.downcase!
-    end
+  # メールアドレスをすべて小文字にする
+  def downcase_email
+    email.downcase!
+  end
 
-    # 有効化トークンとダイジェストを作成および代入する
-    def create_activation_digest
-      self.activation_token  = User.new_token
-      self.activation_digest = User.digest(activation_token)
-    end
+  # 有効化トークンとダイジェストを作成および代入する
+  def create_activation_digest
+    self.activation_token  = User.new_token
+    self.activation_digest = User.digest(activation_token)
+  end
 end
